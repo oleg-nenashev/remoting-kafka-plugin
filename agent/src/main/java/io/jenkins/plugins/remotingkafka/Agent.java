@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +42,7 @@ public class Agent {
             try {
                 agent.options.name = InetAddress.getLocalHost().getCanonicalHostName();
             } catch (IOException e) {
-                LOGGER.severe("Failed to lookup the canonical hostname of this slave, please check system settings.");
+                LOGGER.severe("Failed to lookup the canonical hostname of this agent, please check system settings.");
                 LOGGER.severe("If not possible to resolve please specify a node name using the '-name' option");
                 System.exit(-1);
             }
@@ -55,7 +56,22 @@ public class Agent {
                 + KafkaConstants.CONNECT_SUFFIX;
         String agentMasterConnectionTopic = options.name + "-" + url.getHost() + "-" + url.getPort()
                 + KafkaConstants.CONNECT_SUFFIX;
-        consumer.subscribe(options.kafkaURL, Arrays.asList(masterAgentConnectionTopic), 0);
-        producer.send(options.kafkaURL, agentMasterConnectionTopic, null, "acked from " + options.name);
+        // Producer properties.
+        Properties producerProps = new Properties();
+        producerProps.put(KafkaConstants.BOOTSTRAP_SERVERS, options.kafkaURL);
+        producerProps.put(KafkaConstants.ACKS, "all");
+        producerProps.put(KafkaConstants.KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+        producerProps.put(KafkaConstants.VALUE_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+
+        // Consumer properties.
+        Properties consumerProps = new Properties();
+        consumerProps.put(KafkaConstants.BOOTSTRAP_SERVERS, options.kafkaURL);
+        consumerProps.put(KafkaConstants.GROUP_ID, "testID");
+        consumerProps.put(KafkaConstants.ENABLE_AUTO_COMMIT, "false");
+        consumerProps.put(KafkaConstants.KEY_DESERIALIZER, "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProps.put(KafkaConstants.VALUE_DESERIALIZER, "org.apache.kafka.common.serialization.StringDeserializer");
+
+        consumer.subscribe(consumerProps, Arrays.asList(masterAgentConnectionTopic), 0);
+        producer.send(producerProps, agentMasterConnectionTopic, null, "acked from " + options.name);
     }
 }

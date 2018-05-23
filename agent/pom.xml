@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.jenkins-ci</groupId>
             <artifactId>kafka-client</artifactId>
-            <version>1.0</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
